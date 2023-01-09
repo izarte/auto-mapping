@@ -34,7 +34,6 @@ class Explore:
         self.client = ClientMoveBase()
         rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.read_odom)
         rospy.Subscriber("/map", OccupancyGrid, self.read_map)
-        print("hot")
 
     def get_info(self, data):
         self.resolution = data.info.resolution
@@ -48,7 +47,6 @@ class Explore:
         self.actual_y = data.pose.pose.position.y
 
     def read_map(self, data):
-        # valid = False
         rand_points = {
             'n': 0, 
             'points': []
@@ -85,7 +83,7 @@ class Explore:
                 except IndexError:
                     pass
 
-        if unknowns > 0 and obstacles < 2:
+        if unknowns > 0:
             row = pos / self.width
             col = pos % self.width
             x = col * self.resolution + self.origin_x  # column * resolution + origin_x

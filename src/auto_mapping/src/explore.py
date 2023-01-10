@@ -8,8 +8,15 @@ from random import randrange
 from move import ClientMoveBase
 from math import sqrt, pow 
 
+
+"""
+Class to read map, select, points and move to them
+"""
 class Explore:
     def __init__(self):
+        """
+            Creator, start variables, link callbacks functions
+        """
         self.resolution = 0
         self.origin_x = 0
         self.origin_y = 0
@@ -24,18 +31,18 @@ class Explore:
             'obstacles': 0
         }
 
+        # Read one map message to storage intrisic variables
         map_data = rospy.wait_for_message('/map', OccupancyGrid)
         self.get_info(map_data)
-        print(self.resolution)
-        print(self.origin_x)
-        print(self.origin_y)
-        print(self.width)
-        print(self.height)
         self.client = ClientMoveBase()
+        # Link callbacks functions to suscriber topic
         rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.read_odom)
         rospy.Subscriber("/map", OccupancyGrid, self.read_map)
 
     def get_info(self, data):
+        """
+            Read map message and store its info
+        """
         self.resolution = data.info.resolution
         self.origin_x = data.info.origin.position.x
         self.origin_y = data.info.origin.position.y
@@ -43,32 +50,42 @@ class Explore:
         self.height = data.info.height
 
     def read_odom(self, data):
+        """
+            Callback odometry topic.
+            Update class data from odometry readen
+        """
         self.actual_x = data.pose.pose.position.x
         self.actual_y = data.pose.pose.position.y
 
     def read_map(self, data):
+        """
+            Callback map topic
+            Select 10 front barrier points and select most optimal one
+        """
         rand_points = {
             'n': 0, 
             'points': []
             }
 
-        # while valid is False:
         while rand_points['n'] < 10:
             map_rand = randrange(len(data.data))
             self.map = data.data[map_rand]
 
+            # If point is kown, no object and is barrier point
             if self.map != -1 and self.map <= 0.2 and self.is_edge(data, map_rand):
-                # valid = True
                 rand_points['n'] += 1
                 rand_points['points'].append(self.rand_point)
         print(rand_points)
         (x, y) = self.get_best_point(rand_points['points'])
 
         print(x, y)
+        # Move to point selected
         result = self.client.moveTo(float(x), float(y))
 
     def is_edge(self, data, pos):
-        
+        """
+            Check if point recived is map edge
+        """
         unknowns = 0
         obstacles = 0
         
@@ -98,6 +115,17 @@ class Explore:
             return False
 
     def get_best_point(self, rand_points):
+        """
+            Form list given, select optimal one
+            params:
+                - List of dicts (points) with at least 
+                    - distance
+                    - x
+                    - y
+                    - obstacles
+            returns:
+                Optimal point
+        """
         max_point = {
             'distance': 99999,
             'x': 0,
@@ -115,17 +143,18 @@ class Explore:
             elif (rand_points[i]['obstacles'] == max_point['obstacles']):
                 if (rand_points[i]['distance'] < max_point['distance']):
                     max_point = rand_points[i]
-            # if (dist < max_point['distance']):
-            #     max_point = rand_points[i]
-            #     max_point['distance'] = dist
-            # elif (dist == max_point['distance']):
-            #     if (rand_points[i]['uknowns'] < max_point['uknowns']):
-            #         max_point = rand_points[i]
-            #         max_point['distance'] = dist
         return (max_point['x'], max_point['y'])
 
     def get_dist(self, x, y):
-        return (sqrt(pow(x, 2) + pow(y, 2)))
+        """
+            Return euclidian distance between given point and actual robot position
+            params:
+                - x: float
+                - y: float
+            return:
+                - float
+        """
+        return (sqrt(pow(self.actual_x, 2) + pow(x, 2)) + sqrt(pow(self.actual_y, 2) + pow(y, 2)))
 
 
 def main():

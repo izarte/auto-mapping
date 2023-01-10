@@ -7,7 +7,7 @@ Auto-mapping is a ros noetic package for auto exploration and mapping of envirom
 
 # Usage
 Create a new worskspace in this folder or add src content an existing src workspace.
-In this case, it is assumed repository is inside a folder.
+In this case, it is assumed repository is inside a folder named catkin_ws.
 
 In order to let container display graphical interface such as stage or rviz, it may be necessary to execute this command before container up:
 ```sh
